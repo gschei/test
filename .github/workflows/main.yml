@@ -1,26 +1,30 @@
-name: CI
+name: Test Workflow
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
 
-  changed_files:
+  check-changes:
     runs-on: ubuntu-latest
-    name: Test changed-files
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v44
+    steps: 
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - run: git fetch
+      - run: git log origin/${{ github.event.pull_request.base.ref }}..
 
-      - name: List all changed files
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
+
+      - name: Setup Go 1.22.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22.x'
+
+      - name: install kubectl-validate
+        run: go install sigs.k8s.io/kubectl-validate@latest
+        
